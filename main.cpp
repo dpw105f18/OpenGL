@@ -16,6 +16,12 @@
 #include "Scene.h"
 #include <chrono>
 
+struct Vertex
+{
+	glm::vec3 position;
+	glm::vec2 uv;
+};
+
 #include "SkullVertices.h"
 #include "SkullIndices.h"
 
@@ -118,12 +124,6 @@ static std::vector<char> readPixels(const std::string& localPath, int& outWidth,
 
 	return result;
 }
-
-struct Vertex
-{
-	glm::vec3 position;
-	glm::vec2 uv;
-};
 
 std::vector<Vertex> cube_vertices{
 	Vertex{ glm::vec3{ -0.5f, -0.5f,  0.5f }, glm::vec2{ 0.0f, 0.0f } },
