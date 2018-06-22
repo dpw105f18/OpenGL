@@ -277,16 +277,10 @@ int WinMain(
 		auto vp_location = glGetUniformLocation(shader_program, "vp");
 		auto model_location = glGetUniformLocation(shader_program, "model");
 
-		std::vector<glm::mat4> model_matrices;
-
-		for(auto& ro : scene.renderObjects())
-		{
-			model_matrices.emplace_back(translate(glm::mat4(1.0f), glm::vec3(ro.x(),ro.y(), ro.z())));
-		}
-
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_CULL_FACE);
 		glDepthFunc(GL_LESS);
+		glFrontFace(GL_CW);
 		glCullFace(GL_BACK);
 
 		bool running = true;
@@ -308,6 +302,26 @@ int WinMain(
 		auto currentDataCount = 0;
 
 		glClearColor(0.1f, 0.2f, 0.8f, 1.0f);
+
+		glEnableVertexAttribArray(0);
+		glEnableVertexAttribArray(1);
+		glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+		glVertexAttribPointer(
+		   0,                  // attribute 0. No particular reason for 0, but must match the layout in the shader.
+		   sizeof(Vertex::position)/sizeof(float),                  // size
+		   GL_FLOAT,           // type
+		   GL_FALSE,           // normalized?
+		   sizeof(Vertex),	   // stride
+		   reinterpret_cast<void*>(offsetof(Vertex, position)) // array buffer offset
+		);
+		glVertexAttribPointer(
+		   1,                  // attribute 1
+		   sizeof(Vertex::uv)/sizeof(float), // size
+		   GL_FLOAT,           // type
+		   GL_TRUE,           // normalized?
+		   sizeof(Vertex),     // stride
+		   reinterpret_cast<void*>(offsetof(Vertex, uv))             // array buffer offset
+		);
 
 		do
 		{
@@ -353,41 +367,23 @@ int WinMain(
 				glUseProgram(shader_program);
 				glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
-				// 1st attribute buffer : vertices
-				glEnableVertexAttribArray(0);
-				glEnableVertexAttribArray(1);
-				glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-				glVertexAttribPointer(
-				   0,                  // attribute 0. No particular reason for 0, but must match the layout in the shader.
-				   sizeof(Vertex::position)/sizeof(float),                  // size
-				   GL_FLOAT,           // type
-				   GL_FALSE,           // normalized?
-				   sizeof(Vertex),	   // stride
-				   reinterpret_cast<void*>(offsetof(Vertex, position)) // array buffer offset
-				);
-				glVertexAttribPointer(
-				   1,                  // attribute 1
-				   sizeof(Vertex::uv)/sizeof(float), // size
-				   GL_FLOAT,           // type
-				   GL_TRUE,           // normalized?
-				   sizeof(Vertex),     // stride
-				   reinterpret_cast<void*>(offsetof(Vertex, uv))             // array buffer offset
-				);
 				glUniformMatrix4fv(vp_location, 1, GL_FALSE, &vp[0][0]);
 
-				for(auto& model_matrix : model_matrices)
+				for(auto& ro : scene.renderObjects())
 				{
+					auto model_matrix = translate(glm::mat4(1.0f), glm::vec3(ro.x(),ro.y(), ro.z()));
 					glUniformMatrix4fv(model_location, 1, GL_FALSE, &model_matrix[0][0]);
 					glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_SHORT, nullptr);
 				}
-				glDisableVertexAttribArray(0);
-				glDisableVertexAttribArray(1);
 				SwapBuffers(hdc);
 				++fps;
 			}
 			runTime = Clock::now() - startTime;
 		} while(running && ((testConfig.seconds == 0 || std::chrono::duration<double, std::milli>(runTime).count() < testConfig.seconds * 1000) && testConfig.dataCount == 0 || currentDataCount < testConfig.dataCount));
-	
+
+		glDisableVertexAttribArray(0);
+		glDisableVertexAttribArray(1);
+
 		auto now = time(NULL);
 		tm* localNow = new tm();
 		localtime_s(localNow, &now);
